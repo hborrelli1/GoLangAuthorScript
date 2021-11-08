@@ -2,14 +2,11 @@ package main
 
 import (
 	"fmt"
-	"strings"
-
-	// "io/fs"
 	"io/ioutil"
 	"log"
-
-	// "os"
+	"os"
 	"path/filepath"
+	"strings"
 )
 
 func main() {
@@ -42,36 +39,48 @@ func main() {
 
 			indexFile := filepath.Join(subDir, "index.md")
 			imageFile := filepath.Join(subDir, af.Name())
-			fmt.Println(imageFile, indexFile)
 
 			// Open index file and add in images param.
-			bin, err := ioutil.ReadFile(indexFile)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			text := string(bin)
-			fmt.Println(text)
-
-			// Split string on ---
-			parts := strings.Split(text, "---")
-			fmt.Println(parts, len(parts))
-			doc := []string{
-				parts[0],
-				"---",
-				parts[1],
-				fmt.Sprintf(`images:
-  - %s %s`, imageFile, "\n"),
-				"---",
-				parts[2],
-			}
-			content := strings.Join(doc, "")
-			fmt.Println(content)
-
-			err = ioutil.WriteFile(indexFile, []byte(content), 0644)
-			if err != nil {
-				log.Fatal(err)
+			if fileExists(indexFile) {
+				addImageParam(indexFile, imageFile)
+			} else {
+				addImageParam(indexFile+".md", imageFile)
 			}
 		}
+	}
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
+func addImageParam(indexFile string, imageFile string) {
+	bin, err := ioutil.ReadFile(indexFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	text := string(bin)
+
+	// Split string on ---
+	parts := strings.Split(text, "---")
+	doc := []string{
+		parts[0],
+		"---",
+		parts[1],
+		fmt.Sprintf(`images:
+  - url: /engineering-education/%s %s`, imageFile, "\n"),
+		"---",
+		parts[2],
+	}
+	content := strings.Join(doc, "")
+
+	err = ioutil.WriteFile(indexFile, []byte(content), 0644)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
